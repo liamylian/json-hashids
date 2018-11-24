@@ -61,17 +61,13 @@ func (extension *HashIDsExtension) UpdateStructDescriptor(structDescriptor *json
 		typeName := binding.Field.Type().String()
 		binding.Encoder = &funcEncoder{fun: func(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 
-			iPtr, err := int64Ptr(typeName, ptr)
+			i, err := int64Val(typeName, ptr)
 			if err != nil {
 				stream.Error = err
 				return
 			}
-			if iPtr == nil {
-				stream.Write([]byte("null"))
-				return
-			}
 
-			hashed, err := extension.hashid.EncodeInt64([]int64{*iPtr})
+			hashed, err := extension.hashid.EncodeInt64([]int64{i})
 			if err != nil {
 				stream.Error = err
 				return
@@ -120,7 +116,7 @@ func (encoder *funcEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 	return encoder.isEmptyFunc(ptr)
 }
 
-func int64Ptr(typeName string, ptr unsafe.Pointer) (*int64, error) {
+func int64Val(typeName string, ptr unsafe.Pointer) (int64, error) {
 
 	var i int64
 
@@ -156,10 +152,10 @@ func int64Ptr(typeName string, ptr unsafe.Pointer) (*int64, error) {
 		ip := (*uint64)(ptr)
 		i = int64(*ip)
 	default:
-		return nil, ErrNotInteger
+		return 0, ErrNotInteger
 	}
 
-	return &i, nil
+	return i, nil
 }
 
 func setIntValue(typeName string, ptr unsafe.Pointer, val int64) error {
