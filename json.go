@@ -1,11 +1,12 @@
 package jsonhashids
 
 import (
-	"github.com/json-iterator/go"
-	"github.com/pkg/errors"
-	"github.com/speps/go-hashids"
 	"reflect"
 	"unsafe"
+
+	"errors"
+	"github.com/json-iterator/go"
+	"github.com/speps/go-hashids"
 )
 
 var ErrNotInteger = errors.New("not integer")
@@ -82,12 +83,17 @@ func (extension *HashIDsExtension) UpdateStructDescriptor(structDescriptor *json
 				return
 			}
 
-			ints := extension.hashid.DecodeInt64(str)
+			// See https://github.com/liamylian/json-hashids/issues/1
+			ints, err := extension.hashid.DecodeInt64WithError(str)
 			if len(ints) != 1 {
+				iter.Error = err
 				return
 			}
 
-			setIntValue(typeName, ptr, ints[0])
+			if err = setIntValue(typeName, ptr, ints[0]); err != nil {
+				iter.Error = err
+				return
+			}
 		}}
 	}
 }
